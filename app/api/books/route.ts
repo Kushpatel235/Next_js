@@ -1,9 +1,16 @@
 // app/api/books/route.ts
-import { db } from '@/app/lib/db';
+import { db, hasDatabaseUrl } from '@/app/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET - fetch books
 export async function GET(request: NextRequest) {
+  if (!hasDatabaseUrl()) {
+    return NextResponse.json(
+      { error: 'POSTGRES_URL is not configured' },
+      { status: 503 }
+    );
+  }
+
   const searchParams = request.nextUrl.searchParams;
   const search = searchParams.get('search') || '';
   
@@ -21,6 +28,13 @@ export async function GET(request: NextRequest) {
 // POST - add a book
 export async function POST(request: NextRequest) {
   try {
+    if (!hasDatabaseUrl()) {
+      return NextResponse.json(
+        { error: 'POSTGRES_URL is not configured' },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const { title, author, year } = body;
     
@@ -48,6 +62,13 @@ export async function POST(request: NextRequest) {
 
 // DELETE - remove a book
 export async function DELETE(request: NextRequest) {
+  if (!hasDatabaseUrl()) {
+    return NextResponse.json(
+      { error: 'POSTGRES_URL is not configured' },
+      { status: 503 }
+    );
+  }
+
   const searchParams = request.nextUrl.searchParams;
   const id = searchParams.get('id');
   

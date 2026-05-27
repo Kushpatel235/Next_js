@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import SearchBar from "../components/searchbar";
 import Pagination from "../components/pagination";
-import { db } from "../lib/db";
+import { db, hasDatabaseUrl } from "../lib/db";
 
 export const metadata: Metadata = {
   title: "All Books | Book Library",
@@ -15,6 +15,10 @@ export const revalidate = 0;
 async function getBooks(search: string, page: number) {
   const itemsPerPage = 3;
   const offset = (page - 1) * itemsPerPage;
+
+  if (!hasDatabaseUrl()) {
+    return { books: [], total: 0, databaseReady: false };
+  }
 
   let query = db.selectFrom("books").selectAll();
 
@@ -31,7 +35,7 @@ async function getBooks(search: string, page: number) {
 
   const total = Number(countResult[0]?.count || 0);
 
-  return { books, total };
+  return { books, total, databaseReady: true };
 }
 
 export default async function BooksPage({
@@ -42,7 +46,7 @@ export default async function BooksPage({
   const resolvedSearchParams = await searchParams;
   const search = resolvedSearchParams.search || "";
   const page = Number(resolvedSearchParams.page) || 1;
-  const { books, total } = await getBooks(search, page);
+  const { books, total, databaseReady } = await getBooks(search, page);
 
   return (
     <div>
@@ -51,6 +55,16 @@ export default async function BooksPage({
       <div className="mb-6">
         <SearchBar initialSearch={search} />
       </div>
+
+      {!databaseReady && (
+        <div className="card mb-6 border border-amber-200 bg-amber-50 text-left text-amber-900">
+          <h2 className="mb-2 text-lg font-semibold">Database not configured</h2>
+          <p>
+            Add the <code>POSTGRES_URL</code> environment variable in Vercel to
+            load and save books.
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-4">
         {books.map((book) => (

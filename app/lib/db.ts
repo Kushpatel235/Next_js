@@ -25,7 +25,15 @@ export interface UsersTable {
 
 let cachedDb: Kysely<Database> | null = null;
 
+export function hasDatabaseUrl() {
+  return Boolean(process.env.POSTGRES_URL);
+}
+
 function getDb() {
+  if (!hasDatabaseUrl()) {
+    throw new Error('POSTGRES_URL is not configured.');
+  }
+
   cachedDb ??= createKysely<Database>();
   return cachedDb;
 }

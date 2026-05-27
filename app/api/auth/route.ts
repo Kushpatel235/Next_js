@@ -1,5 +1,5 @@
 // app/api/auth/route.ts
-import { db } from '@/app/lib/db';
+import { db, hasDatabaseUrl } from '@/app/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -8,6 +8,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 
 export async function POST(request: NextRequest) {
   try {
+    if (!hasDatabaseUrl()) {
+      return NextResponse.json(
+        { error: 'POSTGRES_URL is not configured' },
+        { status: 503 }
+      );
+    }
+
     const { email, password, isLogin } = await request.json();
     
     if (isLogin) {
