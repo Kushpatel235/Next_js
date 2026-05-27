@@ -1,6 +1,6 @@
 // app/lib/db.ts
 import { createKysely } from '@vercel/postgres-kysely';
-import { Generated } from 'kysely';
+import type { Generated, Kysely } from 'kysely';
 
 // Define our database schema
 export interface Database {
@@ -23,5 +23,17 @@ export interface UsersTable {
   created_at: Generated<Date>;
 }
 
-// Create database connection
-export const db = createKysely<Database>();
+let cachedDb: Kysely<Database> | null = null;
+
+function getDb() {
+  cachedDb ??= createKysely<Database>();
+  return cachedDb;
+}
+
+// Delay creating the Vercel Postgres client until a query is actually run.
+export const db = new Proxy({} as Kysely<Database>, {
+  get(_target, property, receiver) {
+    const value = Reflect.get(getDb(), property, receiver);
+    return typeof value === 'function' ? value.bind(getDb()) : value;
+  },
+});

@@ -1,16 +1,48 @@
-type BookDetailsPageProps = {
-  params: Promise<{
-    id: string;
-  }>;
-};
+import DeleteButton from "@/app/components/deletebutton";
+import { db } from "@/app/lib/db";
+import { notFound } from "next/navigation";
 
-export default async function BookDetailsPage({ params }: BookDetailsPageProps) {
+export const dynamic = "force-dynamic";
+
+async function getBook(id: number) {
+  const book = await db
+    .selectFrom("books")
+    .selectAll()
+    .where("id", "=", id)
+    .executeTakeFirst();
+
+  if (!book) notFound();
+  return book;
+}
+
+export default async function BookDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
+  const book = await getBook(Number(id));
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-6 py-12">
-      <h1 className="text-3xl font-semibold">Book Details</h1>
-      <p className="text-zinc-600">Book ID: {id}</p>
-    </main>
+    <div className="mx-auto max-w-2xl">
+      <div className="card">
+        <h1 className="mb-4 text-3xl font-bold">{book.title}</h1>
+        <div className="space-y-2 text-gray-700">
+          <p>
+            <strong>Author:</strong> {book.author}
+          </p>
+          <p>
+            <strong>Year:</strong> {book.year}
+          </p>
+          <p>
+            <strong>Added on:</strong>{" "}
+            {new Date(book.created_at).toLocaleDateString()}
+          </p>
+        </div>
+        <div className="mt-6 flex gap-3">
+          <DeleteButton bookId={book.id} />
+        </div>
+      </div>
+    </div>
   );
 }
